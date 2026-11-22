@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Generated data (rebuild with scripts/make_dataset.py)
+data/interim/*
+data/processed/*
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
