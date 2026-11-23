@@ -1,0 +1,7 @@
+id,title,owner,due,status,critical_path,depends_on
+T1,Data model v1,Michal,2026-11-20,done,yes,
+T2,Safety rules v1 (wind stow + stale sensor),Mario,2026-11-21,in_progress,yes,T1
+T3,Advisor scoring prototype (0-60 deg),Mario,2026-11-27,todo,yes,T2
+T4,"Why?" texts for 3 roles,Malak,2026-11-26,todo,no,T3
+T5,Decision log schema,Arkadiusz,2026-11-22,in_progress,no,
+T6,Wizard-of-Oz test protocol (H1),Malak,2026-11-28,todo,yes,T4

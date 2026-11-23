@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Management Agents</title>
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1f2a24; --muted: #5d6a62; --line: #dfdbd0;
+  --accent: #1f5e45; --accent-ink: #ffffff; --warn: #a0620b; --warn-bg: #fbf1df;
+  --bad: #a63b22; --bad-bg: #f9e6e0; --good: #1f6b3f; --good-bg: #e3f2e7; --chip: #eeebe3;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --panel: #1c211e; --ink: #e6ebe7; --muted: #9aa69f; --line: #2e3631;
+    --accent: #5fb58b; --accent-ink: #0f1512; --warn: #e3ad55; --warn-bg: #2f2716;
+    --bad: #ec8b72; --bad-bg: #33201b; --good: #7fcf9c; --good-bg: #1b2b21; --chip: #262d29;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+header h1 { font-size: 18px; margin: 0; flex: 1 1 auto; }
+header h1 small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 13px; color: var(--muted); }
+.controls label { display: flex; gap: 6px; align-items: center; }
+input, textarea, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+textarea { width: 100%; resize: vertical; }
+button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.danger { color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }
+nav { display: flex; gap: 4px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 14px; background: none; color: var(--muted); white-space: nowrap; }
+nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+main { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+section[hidden] { display: none; }
+h2 { font-size: 16px; margin: 24px 0 10px; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h3 { margin: 0 0 4px; font-size: 15px; }
+.muted { color: var(--muted); font-size: 13px; }
+.chip { display: inline-block; background: var(--chip); border-radius: 999px; padding: 1px 9px; font-size: 12px; margin-right: 4px; }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.chip.good { background: var(--good-bg); color: var(--good); }
+pre, .mono { font-family: var(--mono); font-size: 12.5px; }
+pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 8px 0; max-height: 340px; overflow: auto; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.result { margin-top: 10px; font-size: 13px; }
+.trace { margin: 6px 0 0; padding-left: 18px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.trace .denied { color: var(--bad); }
+.draft { margin-bottom: 12px; }
+.draft .head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.empty { color: var(--muted); padding: 18px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.md h1, .md h2, .md h3 { font-size: 15px; margin: 12px 0 6px; }
+.md ul { margin: 4px 0; padding-left: 20px; }
+.split { display: grid; grid-template-columns: 220px 1fr; gap: 14px; }
+.filelist button { display: block; width: 100%; text-align: left; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; }
+.filelist button.active { border-color: var(--accent); }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+#toast.show { opacity: 1; }
+@media (max-width: 720px) { .split { grid-template-columns: 1fr; } header, nav, main { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Project Management Agents<small>Agents draft, compute and flag. People approve.</small></h1>
+  <div class="controls">
+    <label>Reviewer <input id="reviewer" placeholder="Your name" size="12"></label>
+    <label>Data date <input id="today" type="date"></label>
+    <label>Engine
+      <select id="engine"><option value="rules">Deterministic rules (offline)</option><option value="model">Claude model</option></select>
+    </label>
+  </div>
+</header>
+<nav id="tabs">
+  <button data-tab="run" class="active">Run &amp; review</button>
+  <button data-tab="record">Project record</button>
+  <button data-tab="data">Input data</button>
+  <button data-tab="log">Audit log</button>
+  <button data-tab="tests">Behavioural tests</button>
+</nav>
+<main>
+  <section id="tab-run">
+    <div class="row" style="justify-content: space-between; margin-top: 0;">
+      <p class="muted" style="margin: 0;">Run one agent, or the weekly sequence (tracker, budget, then risk &amp; ADR). Each run creates drafts that wait for a human decision below.</p>
+      <button class="primary" id="run-all">Run weekly sequence</button>
+    </div>
+    <div class="grid" id="agents" style="margin-top: 14px;"></div>
+    <h2>Pending drafts <span class="chip" id="pending-count">0</span></h2>
+    <div id="pending"></div>
+    <h2>Decided</h2>
+    <div id="decided"></div>
+  </section>
+
+  <section id="tab-record" hidden>
+    <p class="muted">Everything here was approved by a person. Refused drafts only appear in the decision log.</p>
+    <h2>Decision log</h2><div id="rec-decisions"></div>
+    <h2>Risk register additions</h2><div id="rec-risks"></div>
+    <h2>Sprint logs</h2><div id="rec-sprints"></div>
+    <h2>Architectural Decision Records</h2><div id="rec-adr"></div>
+  </section>
+
+  <section id="tab-data" hidden>
+    <p class="muted">The agents only read these files. Update them every week before running the agents.</p>
+    <div class="split">
+      <div>
+        <div class="filelist" id="files"></div>
+        <button id="new-meeting" style="width: 100%; margin-top: 8px;">New meeting note</button>
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content: space-between; margin-top: 0;">
+          <strong class="mono" id="file-name">Select a file</strong>
+          <button class="primary" id="save-file" disabled>Save</button>
+        </div>
+        <textarea id="file-text" rows="20" class="mono" disabled></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-log" hidden>
+    <div class="row" style="margin-top: 0;">
+      <label class="muted">Agent <select id="log-agent"><option value="">All</option></select></label>
+      <button id="log-refresh">Refresh</button>
+    </div>
+    <div class="table-wrap" style="margin-top: 10px;"><table id="log-table"></table></div>
+  </section>
+
+  <section id="tab-tests" hidden>
+    <p class="muted">Each scenario runs the agent through its command-line interface in a sandbox copy of the data and checks its behaviour. With an API key, <span class="mono">python3 run_scenarios.py --judge</span> also has an evaluating agent grade every rubric criterion.</p>
+    <button class="primary" id="run-tests">Run scenarios</button>
+    <div id="test-results" style="margin-top: 14px;"></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const DESCRIPTIONS = {
+  tracker: "Reads the task board and meeting notes. Drafts the sprint log and flags late or blocked tasks.",
+  budget: "Sums hours and API cost. Alerts on any budget line at or above 70% of its maximum.",
+  risk_adr: "Drafts risks as cause, event, effect with a probability x impact score, and ADRs for meeting decisions."
+};
+let STATE = null, currentFile = null;
+const lastRun = {};
+
+function store(key, value) { try { value === undefined ? null : localStorage.setItem(key, value); return localStorage.getItem(key); } catch { return null; } }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2600); }
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function md(text) {
+  const lines = String(text || "").split("\n"); let html = "", list = false, table = [];
+  const flushTable = () => {
+    if (!table.length) return;
+    const rows = table.filter((r) => !/^\|\s*-/.test(r)).map((r) => r.replace(/^\||\|$/g, "").split("|").map((c) => c.trim()));
+    html += `<div class="table-wrap"><table><tr>${rows[0].map((c) => `<th>${esc(c)}</th>`).join("")}</tr>${rows.slice(1).map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
+    table = [];
+  };
+  for (const l of lines) {
+    if (l.startsWith("|")) { table.push(l); continue; } flushTable();
+    if (/^[-*] /.test(l)) { if (!list) { html += "<ul>"; list = true; } html += `<li>${esc(l.slice(2))}</li>`; continue; }
+    if (list) { html += "</ul>"; list = false; }
+    const h = l.match(/^(#{1,3}) (.*)/);
+    if (h) html += `<h3>${esc(h[2])}</h3>`; else if (l.trim()) html += `<p>${esc(l)}</p>`;
+  }
+  flushTable(); if (list) html += "</ul>";
+  return `<div class="md">${html}</div>`;
+}
+
+const KIND = { sprint_log: ["Sprint log", ""], delay: ["Delay", "warn"], dependency: ["Dependency", "warn"], budget: ["Budget alert", "warn"], risk: ["Risk", "bad"], adr: ["ADR", ""] };
+function kindChip(k) { const [label, cls] = KIND[k] || [k, ""]; return `<span class="chip ${cls}">${label}</span>`; }
+
+function renderAgents() {
+  $("#agents").innerHTML = Object.entries(STATE.agents).map(([id, name]) => {
+    const r = lastRun[id];
+    const result = r ? `<div class="result"><strong>${esc(r.response)}</strong>
+      <div class="muted mono">session ${esc(r.session_id)}</div>
+      <ol class="trace">${r.trace.map((t) => `<li class="${t.denied ? "denied" : ""}">${esc(t.tool)}${t.created ? " → " + esc(t.created) : ""}${t.denied ? " — " + esc(t.denied) : ""}</li>`).join("")}</ol></div>` : "";
+    return `<div class="card"><h3>${esc(name)}</h3><div class="muted mono">${id}</div><p class="muted">${DESCRIPTIONS[id]}</p>
+      <button class="primary" data-run="${id}">Run</button>${result}</div>`;
+  }).join("");
+  document.querySelectorAll("[data-run]").forEach((b) => b.onclick = () => runAgents([b.dataset.run]));
+}
+
+function renderDrafts() {
+  const pending = STATE.drafts.filter((d) => d.status === "pending");
+  const decided = STATE.drafts.filter((d) => d.status !== "pending").reverse();
+  $("#pending-count").textContent = pending.length;
+  $("#pending").innerHTML = pending.length ? pending.map((d) => `
+    <div class="card draft" id="d-${esc(d.id)}">
+      <div class="head"><div>${kindChip(d.kind)}<strong>${esc(d.title)}</strong></div>
+        <span class="muted">${esc(d.agent)} agent → for ${esc(d.owner)}</span></div>
+      ${d.score ? `<div class="row"><span class="chip ${d.score >= 6 ? "bad" : "warn"}">Probability ${d.probability} × Impact ${d.impact} = ${d.score}${d.escalate ? " · escalate" : ""}</span><span class="muted">Mitigation: ${esc(d.mitigation)}</span></div>` : ""}
+      ${d.kind === "sprint_log" || d.kind === "adr" ? md(d.body) : `<p>${esc(d.body)}</p>`}
+      <div class="muted">Evidence: ${esc(d.evidence)}</div>
+      <div class="row"><input placeholder="Reason for your decision" style="flex: 1 1 240px;" data-reason="${esc(d.id)}">
+        <button class="primary" data-decide="${esc(d.id)}" data-approve="1">Approve</button>
+        <button class="danger" data-decide="${esc(d.id)}" data-approve="0">Refuse</button></div>
+    </div>`).join("") : `<div class="empty">No drafts waiting. Run an agent to create some.</div>`;
+  $("#decided").innerHTML = decided.length ? `<div class="table-wrap"><table><tr><th>Decision</th><th>Item</th><th>Agent</th><th>By</th><th>Reason</th></tr>
+    ${decided.map((d) => `<tr><td><span class="chip ${d.status === "approved" ? "good" : "bad"}">${d.status}</span></td><td>${kindChip(d.kind)}${esc(d.title)}</td><td>${esc(d.agent)}</td><td>${esc(d.decided_by)}</td><td>${esc(d.reason)}</td></tr>`).join("")}</table></div>`
+    : `<div class="empty">No decisions yet.</div>`;
+  document.querySelectorAll("[data-decide]").forEach((b) => b.onclick = () => decideDraft(b.dataset.decide, b.dataset.approve === "1"));
+}
+
+async function refresh() {
+  STATE = await api("/api/state");
+  const engine = $("#engine");
+  engine.options[1].disabled = !STATE.api_key;
+  engine.options[1].textContent = STATE.api_key ? `Claude model (${STATE.model})` : "Claude model (set ANTHROPIC_API_KEY)";
+  if (!STATE.api_key) engine.value = "rules";
+  renderAgents(); renderDrafts();
+}
+
+async function runAgents(list) {
+  const buttons = document.querySelectorAll("button"); buttons.forEach((b) => b.disabled = true);
+  try {
+    for (const agent of list) {
+      toast(`Running ${STATE.agents[agent]}…`);
+      lastRun[agent] = await api("/api/run", { agent, offline: $("#engine").value === "rules", today: $("#today").value });
+    }
+    toast("Done. Review the drafts below.");
+  } catch (e) { toast(e.message); }
+  buttons.forEach((b) => b.disabled = false);
+  await refresh();
+}
+
+async function decideDraft(id, approve) {
+  const by = $("#reviewer").value.trim();
+  if (!by) { $("#reviewer").focus(); return toast("Enter your name as reviewer first."); }
+  const reason = document.querySelector(`[data-reason="${CSS.escape(id)}"]`).value;
+  try { await api("/api/decide", { id, approve, by, reason }); toast(approve ? "Approved and added to the project record." : "Refused and logged."); }
+  catch (e) { toast(e.message); }
+  await refresh();
+}
+
+async function loadRecord() {
+  const o = await api("/api/output");
+  $("#rec-decisions").innerHTML = o.decision_log ? md(o.decision_log) : `<div class="empty">No decisions yet.</div>`;
+  $("#rec-risks").innerHTML = o.risks ? md(o.risks) : `<div class="empty">No approved risks yet.</div>`;
+  const docs = (m, empty) => Object.keys(m).length ? Object.entries(m).map(([n, t]) => `<div class="card" style="margin-bottom: 10px;"><div class="muted mono">${esc(n)}</div>${md(t)}</div>`).join("") : `<div class="empty">${empty}</div>`;
+  $("#rec-sprints").innerHTML = docs(o.sprint_logs, "No approved sprint logs yet.");
+  $("#rec-adr").innerHTML = docs(o.adr, "No approved ADRs yet.");
+}
+
+async function loadFiles(select) {
+  const files = await api("/api/data");
+  $("#files").innerHTML = Object.keys(files).map((n) => `<button data-file="${esc(n)}" class="${n === select ? "active" : ""}">${esc(n)}</button>`).join("");
+  document.querySelectorAll("[data-file]").forEach((b) => b.onclick = () => {
+    currentFile = b.dataset.file; $("#file-name").textContent = currentFile;
+    $("#file-text").value = files[currentFile]; $("#file-text").disabled = false; $("#save-file").disabled = false;
+    document.querySelectorAll("[data-file]").forEach((x) => x.classList.toggle("active", x === b));
+  });
+  if (select) document.querySelector(`[data-file="${CSS.escape(select)}"]`)?.click();
+}
+
+async function loadLog() {
+  const rows = await api("/api/log"); const f = $("#log-agent").value;
+  const shown = rows.filter((r) => !f || r.agent === f);
+  const detail = (r) => Object.entries(r).filter(([k]) => !["ts", "agent", "event"].includes(k)).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ");
+  const cls = (e) => e === "tool_denied" || e === "run_failed" || e === "refusal" ? "bad" : e === "human_decision" ? "good" : e === "draft" ? "warn" : "";
+  $("#log-table").innerHTML = `<tr><th>Time</th><th>Agent</th><th>Event</th><th>Details</th></tr>` + (shown.length
+    ? shown.map((r) => `<tr><td class="mono">${esc(r.ts)}</td><td>${esc(r.agent)}</td><td><span class="chip ${cls(r.event)}">${esc(r.event)}</span></td><td class="mono">${esc(detail(r))}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">The audit log is empty.</td></tr>`);
+}
+
+$("#tabs").onclick = (e) => {
+  const tab = e.target.dataset.tab; if (!tab) return;
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll("main section").forEach((s) => s.hidden = s.id !== "tab-" + tab);
+  if (tab === "record") loadRecord(); if (tab === "data") loadFiles(currentFile); if (tab === "log") loadLog();
+};
+$("#run-all").onclick = () => runAgents(["tracker", "budget", "risk_adr"]);
+$("#save-file").onclick = async () => { try { await api("/api/data", { name: currentFile, text: $("#file-text").value }); toast(`Saved ${currentFile}`); } catch (e) { toast(e.message); } };
+$("#new-meeting").onclick = async () => {
+  const name = `meetings/${$("#today").value || new Date().toISOString().slice(0, 10)}_weekly.md`;
+  const template = "# Weekly meeting\nPresent: \n- \n- Decision: \n- Action: \n";
+  try { await api("/api/data", { name, text: template }); await loadFiles(name); toast(`Created ${name}`); } catch (e) { toast(e.message); }
+};
+$("#log-refresh").onclick = loadLog; $("#log-agent").onchange = loadLog;
+$("#run-tests").onclick = async (e) => {
+  e.target.disabled = true; $("#test-results").innerHTML = `<div class="empty">Running scenarios…</div>`;
+  try {
+    const r = await api("/api/scenarios", {});
+    $("#test-results").innerHTML = r.report.map((s) => `<div class="card" style="margin-bottom: 8px;"><span class="chip ${s.pass ? "good" : "bad"}">${s.pass ? "PASS" : "FAIL"}</span> ${esc(s.scenario)}${s.problems.length ? `<pre>${esc(s.problems.join("\n"))}</pre>` : ""}</div>`).join("")
+      + `<pre>${esc(r.output)}</pre>`;
+  } catch (err) { $("#test-results").innerHTML = `<pre>${esc(err.message)}</pre>`; }
+  e.target.disabled = false;
+};
+$("#reviewer").value = store("reviewer") || "";
+$("#reviewer").onchange = () => store("reviewer", $("#reviewer").value.trim());
+
+(async () => {
+  await refresh();
+  $("#today").value = STATE.today;
+  Object.entries(STATE.agents).forEach(([id, name]) => $("#log-agent").insertAdjacentHTML("beforeend", `<option value="${id}">${esc(name)}</option>`));
+})();
+</script>
+</body>
+</html>
